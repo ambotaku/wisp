@@ -1,6 +1,1 @@
-.vscode
-a.out
-main
-lisp
-wisp
-boot.lisp
+/build

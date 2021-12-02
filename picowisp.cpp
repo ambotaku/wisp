@@ -11,15 +11,14 @@
 #define NO_LIBM_SUPPORT "no libm support"
 #endif
 
-
-// Comment this define out to drop support for standard library functions.
-// This allows the program to run without a runtime.
-#ifdef USE_STD
+#include <pico/stdlib.h>
 #include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <ctime>
 
+//#include <iostream>
+//#include <fstream>
+//#include <ctime>
+
+/*
 std::string read_file_contents(std::string filename) {
     std::ifstream f;
     f.open(filename.c_str());
@@ -36,10 +35,7 @@ std::string read_file_contents(std::string filename) {
 
     return contents;
 }
-
-#else
-#define NO_STD "no standard library support"
-#endif
+*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -184,7 +180,7 @@ public:
     // Constructs a list
     Value(std::vector<Value> list) : type(LIST), list(list) {}
 
-    // Construct a quoted value
+    // Construct a (quote)d value
     static Value quote(Value quoted) {
         Value result;
         result.type = QUOTE;
