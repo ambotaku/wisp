@@ -1809,17 +1809,26 @@ int main(int argc, const char **argv) {
 
 #else
 
-std::string getLine() {
+const int eof = 0xff;
+
+std::string getLine(bool echo=false) {
     std::string line = "";
     bool lineEnd = false;
 
     while(!lineEnd) {
-        switch (int c=getchar())
-        {
-        case EOF:
+        int c = getchar() & 0xff;
+
+        switch (c) {
+        case eof:
             continue;
         case '\b':
-            line.pop_back();
+            if (!line.empty()) {
+                line.pop_back();
+                if (echo) {
+                    putchar('\b');
+                    putchar(' ');
+                }
+            }
             break;
         case '\r':
         case '\n':
@@ -1828,6 +1837,10 @@ std::string getLine() {
         default:
             line += c;
             break;
+        }
+                
+        if (echo) {
+            putchar(c);
         }
     }
 
