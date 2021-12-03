@@ -74,7 +74,6 @@ std::string read_file_contents(std::string filename) {
 #define INTERNAL_ERROR "interal virtual machine error"
 #define INDEX_OUT_OF_RANGE "index out of range"
 #define MALFORMED_PROGRAM "malformed program"
-#define OUT_OF_MEMORY "out of memory"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// TYPE NAMES /////////////////////////////////////////////////////////////////
@@ -1808,84 +1807,64 @@ int main(int argc, const char **argv) {
     }
 }
 #else
-const uint startLineLength = 8; // the linebuffer will automatically grow for longer lines
-const char eof = 255;           // EOF in stdio.h -is -1, but getchar returns int 255 to avoid blocking
 
-/*
- *  read a line of any  length from stdio (grows)
- *
- *  @param fullDuplex input will echo on entry (terminal mode) when false
- *  @param linebreak defaults to "\n", but "\r" may be needed for terminals
- *  @return entered line on heap - don't forget calling free() to get memory back
- */
-char* getLine(bool fullDuplex = true, char lineBreak = '\n') {
-    // th line buffer
-    // will allocated by pico_malloc module if <cstdlib> gets included
-    char * pStart = (char*)malloc(startLineLength); 
-    char * pPos = pStart;  // next character position
-    size_t maxLen = startLineLength; // current max buffer size
-    size_t len = maxLen; // current max length
-    int c;
+const int eof = 0xff;
 
-    if(!pStart) {
-        throw std::runtime_error(OUT_OF_MEMORY); // out of memory or dysfunctional heap
-    }
+std::string getLine(bool echo=true) {
+    std::string line = "";
+    bool lineEnd = false;
 
-    while(1) {
-        c = getchar(); // expect next character entry
-        if(c == eof || c == lineBreak) {
-            break;     // non blocking exit
-        }
+    while(!lineEnd) {
+        int c = getchar_timeout_us(10000) & 0xff;
 
-        if (fullDuplex) {
-            putchar(c); // echo for fullDuplex terminals
-        }
-
-        if(--len == 0) { // allow larger buffer
-            len = maxLen;
-            // double the current line buffer size
-            char *pNew  = (char*)realloc(pStart, maxLen *= 2);
-            if(!pNew) {
-                free(pStart);
-                throw std::runtime_error(OUT_OF_MEMORY);
+        switch (c) {
+        case eof:
+            continue;
+        case '\b':
+            if (!line.empty()) {
+                line.pop_back();
+                if (echo) {
+                    putchar('\b');
+                    putchar(' ');
+                }
             }
-            // fix pointer for new buffer
-            pPos = pNew + (pPos - pStart);
-            pStart = pNew;
-        }
-
-        // stop reading if lineBreak character entered 
-        if((*pPos++ = c) == lineBreak) {
+            break;
+        case '\r':
+        case '\n':
+            lineEnd = true;
+            break;
+        default:
+            line += c;
             break;
         }
-    }
-
-    *pPos = '\0';   // set string end mark
-    return pStart;
-}
-
-int main()
-{
-    stdio_init_all(); // needed for redirect stdin/stdout to Pico's USB or UART ports
-    printf("PicoWisp Interpreter 0.1\r\n");
-    Environment env;
-    while(1) {
-        char *pLine = getLine(true, '\r');
-        if (!*pLine) {
-            continue;
-        } else {
-            try {
-                std::string input = pLine;
-                free (pLine);
-                auto tmp = run(input, env);
-                printf("\r\n%s\r\n", to_string(tmp.debug()).c_str());
-            } catch (Error &e) {
-                printf("%s\n", e.description());
-            } catch (std::runtime_error &e) {
-                printf("%s\n", e.what());
-            }
+                
+        if (echo) {
+            putchar(c);
         }
     }
+
+    return line;
+}
+
+int main(int argc, const char **argv) {
+    Environment env;
+
+    stdio_init_all();
+    printf("PicoWisp Interpreter 0.1\r\n");
+
+    for(;;) {
+        printf(">>> ");
+        try {
+            auto result = run(getLine(), env);
+            printf("\r\n%s\r\n", to_string(result.debug()).c_str());
+        } catch (Error &e) {
+            printf("\r\n%s\r\n", e.description());
+        } catch (std::runtime_error &e) {
+            printf("\r\n%s\r\n", e.what());
+        }
+    }
+
     return 0;
 }
+
 #endif
