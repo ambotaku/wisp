@@ -1780,6 +1780,8 @@ Value Environment::get(std::string name) const {
     throw Error(Value::atom(name), *this, ATOM_NOT_DEFINED);
 }
 
+#ifdef USE_STD
+
 int main(int argc, const char **argv) {
     Environment env;
     std::vector<Value> args;
@@ -1787,7 +1789,6 @@ int main(int argc, const char **argv) {
         args.push_back(Value::string(argv[i]));
     env.set("cmd-args", Value(args));
 
-    #ifdef USE_STD
     srand(time(NULL));
     try {
         if (argc == 1 || (argc == 2 && std::string(argv[1]) == "-i"))
@@ -1802,10 +1803,54 @@ int main(int argc, const char **argv) {
     } catch (std::runtime_error &e) {
         std::cerr << e.what() << std::endl;
     }
-    #else
-    if (argc == 3 && std::string(argv[1]) == "-c")
-        run(argv[2], env);
-    #endif
 
     return 0;
 }
+
+#else
+
+std::string getLine() {
+    std::string line = "";
+    bool lineEnd = false;
+
+    while(!lineEnd) {
+        switch (int c=getchar())
+        {
+        case EOF:
+            continue;
+        case '\b':
+            line.pop_back();
+            break;
+        case '\r':
+        case '\n':
+            lineEnd = true;
+            break;
+        default:
+            line += c;
+            break;
+        }
+    }
+
+    return line;
+}
+
+int main(int argc, const char **argv) {
+    Environment env;
+    printf("PicoWisp Interpreter 0.1\r\n");
+
+    for(;;) {
+        printf(">>> ");
+        try {
+            auto result = run(getLine(), env);
+            printf("\r\n%s\r\n", to_string(result.debug()).c_str());
+        } catch (Error &e) {
+            printf("\r\n%s\r\n", e.description());
+        } catch (std::runtime_error &e) {
+            printf("\r\n%s\r\n", e.what());
+        }
+    }
+
+    return 0;
+}
+
+#endif
