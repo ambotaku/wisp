@@ -148,7 +148,7 @@ For the Linux branch just move the **wisp** command elsewhere or start it from t
 For Raspberry Pi Pico copy the **wisp.uf2** installer onto the device or run the device with a probe
 attached to its debugging port.
 
-By using VSCode (enter //code .// in the project workspace) all operations can be automated by that IDE.
+By using VSCode (enter *code .* in the project workspace) all operations can be automated by that IDE.
 
 #### Debugging
 For the Linux branch just use GDB (via  VSCode), the Raspberry Pi Pico needs a "probe" connected to its debug connector. Such a probe can be a Raspberry Pi or another Raspberry Pi Pico programmed with **PicoProbe** software.
@@ -158,7 +158,7 @@ See Appendix A in [Getting started with RaspberryPi Pico](https://datasheets.ras
 
 By uncommenting the line
 ```#add_definitions(-DUSE_STD -DHAS_LIBM)```
-in file **CMakeLists.txt** you can build a *Wisp* executable that has nearly all features of Adam's original release when using it on a Linux system.
+in file **CMakeLists.txt** you can build a *wisp* executable that has nearly all features of Adam's original release when using it on a Linux system.
 
 That line is commented to remove any operating system dependencies (as needed for microcontrollers). 
 Under Linux such a build should behave like being run on a controller and only the REPL mode is available.
