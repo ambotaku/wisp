@@ -1,4 +1,9 @@
 /// A microlisp named Wisp, by Adam McDaniel
+/// port for embedded systems (e.g. Raspberry Pi Pico), by Klaus Zerbe
+
+// this "main" branch (for tests) will run on Linux and needs <cstdio> for stdin/stdout access
+// another branch "Pico" is based on <stdio.h> of the Pi Pico SDK for that
+// ports for other microcontrollers need other branches
 
 ////////////////////////////////////////////////////////////////////////////////
 /// LANGUAGE OPTIONS ///////////////////////////////////////////////////////////
@@ -8,7 +13,7 @@
 #ifdef HAS_LIBM
 #include <cmath>
 #else
-#define NO_LIBM_SUPPORT "no libm support"
+#define NO_LIBM_SUPPORT "no libm support"           
 #endif
 
 
@@ -39,6 +44,7 @@ std::string read_file_contents(std::string filename) {
 
 #else
 #define NO_STD "no standard library support"
+#include <cstdio>
 #endif
 
 
@@ -1820,6 +1826,7 @@ std::string getLine(bool echo=false) {
 
         switch (c) {
         case eof:
+            
             continue;
         case '\b':
             if (!line.empty()) {
