@@ -1,30 +1,37 @@
 # wisp
 
-A light lisp written in C++
+## A light lisp written in C++
 ![Wisp](./assets/wisp.png)
 
-## Why write a lisp?
+## Why write a lisp for microcontrollers ?
 
-Lisp is one of those niche, beautiful languages that people only really use to either
+I ported Adam McDaniel's Wisp to get a small interactive and embeddable language for modern popular microcontrollers 
+like the Raspberry Pi Pico or ESP32. I know there are MicroPython, CircuitPython and Lua available for those, 
+but creating native libraries (C/C++) code is is not only elaborate, but debugging possibilities are awful.
 
-1. Write a lisp interpreter
-2. Show off how "code is data!!!"
+I tried several small Scheme and Lisp interpreters written in C, but due to missing support for dynamic data
+structures in plain C such code gets difficult to understand especially when creating a LISP-like language, which was created for data abstraction on a high level. 
 
-_So why add to the list of infinite lisp interpreters?_
+Adam's code is using STL libraries like <string>, <vector>, <map> and <sstream> 
+which near LISP conditions and make the source code easy to understand and maintain.
 
-The answer is simple: _**I'm bored out of my mind in quarantine.**_ If you were looking to find out why _this particular_ lisp is special, you're fresh out of luck. 
+Fortunately Adam isolated STL libraries like <iostream> and <fstream> which depend on an operating system in his code 
+by a define USE_STD, also the <math> functions are optionals by a define NO_LIBM_SUPPORT. That is very useful for porting thw code to microcontrollers which have neither an operating system nor float arithmetics.
 
-But isn't the fact that it's a lisp _*enough*_?
+So currently this project has two branches:
+  - the "main" branch allows easy extending, running and testing on a linux system
+  - the "Pico" branch runs on a Raspberry Pi Pico microcontroller with an attached terminal emulator
 
-![Lisp](./assets/xkcd.png)
+  Comfortable C++ Source code debugging is possible with a second Pi Pico as "probe" or a Raspberry Pi4 desktop,
+  but uploading takes sume time, since the STL- libraries require more memory as plain C code.
 
-yes.
-
+Currently I just ported Adam's code without extra functionality, so I just attached Adam's language descriptions.
+Due to the lack of an OS and mass storage for the controller, currently only the REPL can be used.
 ## Syntax and Special Forms
 
 Like every other lisp, this language uses s-expressions for code syntax and data syntax. So, for example, the s-expression `(print 5)` is both a valid code snippet, and a valid list containing the items `print` and `5`.
 
-When the data `(print 5)` is evaluated by the interpreter, it evaluates `print` and `5`, and then applies `print` to `5`. 
+When the data `(print 5)` is evaluated by the interpreter, it evaluates `printli` and `5`, and then applies `print` to `5`. 
 
 Here's the result.
 
