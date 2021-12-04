@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.py": "python",
-        "optional": "cpp"
+        "optional": "cpp",
+        "cctype": "cpp"
     }
 }
