@@ -1,4 +1,10 @@
 /// A microlisp named Wisp, by Adam McDaniel
+/// a port for Raspberry Pi Pico microcontrollers, by Klaus Zerbe
+///
+/// This is branch "Pico", the main branch supports Linux
+/// it needs "stdio.h" and "pico/stdlib.h" of the Pi Pico SDK 
+/// and can't support STL library parts that depend on an operating system
+/// since there isn't any on the Pi Pico
 
 ////////////////////////////////////////////////////////////////////////////////
 /// LANGUAGE OPTIONS ///////////////////////////////////////////////////////////
@@ -1858,7 +1864,7 @@ int main(int argc, const char **argv) {
             auto result = run(getLine(), env);
             printf("\r\n%s\r\n", to_string(result.debug()).c_str());
         } catch (Error &e) {
-            printf("\r\n%s\r\n", e.description());
+            printf("\r\n%s\r\n", e.description().c_str());
         } catch (std::runtime_error &e) {
             printf("\r\n%s\r\n", e.what());
         }
