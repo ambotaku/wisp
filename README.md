@@ -126,35 +126,37 @@ Using and compiling wisp
 #### Dependencies
 
 Compile with your C++ compiler of choice. This is compatible with all standard versions of C++ since ANSI C++.
+To build wisp for microcontrollers like the Raspberry Pi Pico you need a matching toolchain / SDK.
+
+Learn more with [Getting started with RaspberryPi Pico](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf)
+
+To support different target builds **cmake** is used. For a complete toolchain Microsoft Visual Code (VSCode)
+is supported by settings in folder **.vscode**.
 
 ```bash
-$ git clone https://github.com/adam-mcdaniel/wisp
+$ git clone https://github.com/ambotaku/wisp.git  # to get the main branch (Linux)
 $ cd wisp
-$ g++ wisp.cpp -o wisp
+$ git checkout Pico # for getting the branch running on Raspberry Pi Pico (RP2040)
+$ mkdir build # create a build directory
+$ cd build # enter build directory
+$ cmake .. # configure build target
+$ make     # build the target
 ```
+For the Linux branch just move the **wisp** command elsewhere or start it from the *build* folder.
+For Raspberry Pi Pico copy the **wisp.uf2** installer onto the device or run the device with a probe
+attached to its debugging port.
+
+By using VSCode (enter //code .// in the project workspace) all operations can be automated by that IDE.
+
+#### Debugging
+For the Linux branch just use GDB (via  VSCode), the Raspberry Pi Pico needs a "probe" connected to its debug connector. Such a probe can be a Raspberry Pi or another Raspberry Pi Pico programmed with **PicoProbe** software.
+See Appendix A in [Getting started with RaspberryPi Pico](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf)
 
 #### Using the binary
 
-Run wisp in interactive mode:
+By uncommenting the line
+```#add_definitions(-DUSE_STD -DHAS_LIBM)```
+in file **CMakeLists.txt** you can build a *Wisp* executable that has nearly all features of Adam's original release when using it on a Linux system.
 
-```bash
-$ ./wisp
->>> (print "Hello world!")
-Hello world!
- => "Hello world!"
-```
-
-Interpret a file:
-
-```bash
-$ ./wisp -f "examples/hello_world.lisp"
-Hello world!
-```
-
-Interpret from command line argument:
-
-```bash
-$ ./wisp -c '(print "Hello world!")'
-Hello world!
-```
-
+That line is commented to remove any operating system dependencies (as needed for microcontrollers). 
+Under Linux such a build should behave like being run on a controller and only the REPL mode is available.
