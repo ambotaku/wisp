@@ -12,18 +12,20 @@ but creating native libraries (C/C++) code is is not only elaborate, but debuggi
 I tried several small Scheme and Lisp interpreters written in C, but due to missing support for dynamic data
 structures in plain C such code gets difficult to understand especially when creating a LISP-like language, which was created for data abstraction on a high level. 
 
-Adam's code is using STL libraries like <string>, <vector>, <map> and <sstream> 
+Adam's code is using STL libraries like string, vector, map and sstream 
 which near LISP conditions and make the source code easy to understand and maintain.
 
-Fortunately Adam isolated STL libraries like <iostream> and <fstream> which depend on an operating system in his code 
-by a define USE_STD, also the <math> functions are optionals by a define NO_LIBM_SUPPORT. That is very useful for porting thw code to microcontrollers which have neither an operating system nor float arithmetics.
+Fortunately Adam isolated STL libraries like iostream and fstream which depend on an operating system in his code 
+by a define USE_STD, also the math functions are optionals by a define NO_LIBM_SUPPORT. That is very useful for porting thw code to microcontrollers which have neither an operating system nor float arithmetics.
 
 So currently this project has two branches:
   - the "main" branch allows easy extending, running and testing on a linux system
   - the "Pico" branch runs on a Raspberry Pi Pico microcontroller with an attached terminal emulator
 
-  Comfortable C++ Source code debugging is possible with a second Pi Pico as "probe" or a Raspberry Pi4 desktop,
-  but uploading takes sume time, since the STL- libraries require more memory as plain C code.
+Comfortable C++ Source code debugging is possible with a second Pi Pico as "probe" or a Raspberry Pi4 desktop,
+but uploading takes some time, since the STL- libraries require more memory as plain C code.
+Currently the code size is with around 300k a little bit lower than e.g. Micropython, but debug sessions with an upload after each change take lots of time,
+so one should make language core extensions in the main branch and merge them later.
 
 Currently I just ported Adam's code without extra functionality, so I just attached Adam's language descriptions.
 Due to the lack of an OS and mass storage for the controller, currently only the REPL can be used.
