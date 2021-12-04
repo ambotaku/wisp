@@ -1857,7 +1857,7 @@ int main(int argc, const char **argv) {
             auto result = run(getLine(), env);
             printf("\r\n%s\r\n", to_string(result.debug()).c_str());
         } catch (Error &e) {
-            printf("\r\n%s\r\n", e.description());
+            printf("\r\n%s\r\n", e.description().c_str());
         } catch (std::runtime_error &e) {
             printf("\r\n%s\r\n", e.what());
         }
