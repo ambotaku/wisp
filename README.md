@@ -16,7 +16,7 @@ Adam's code is using STL libraries like string, vector, map and sstream
 which near LISP conditions and make the source code easy to understand and maintain.
 
 Fortunately Adam isolated STL libraries like iostream and fstream which depend on an operating system in his code 
-by a define USE_STD, also the math functions are optionals by a define NO_LIBM_SUPPORT. That is very useful for porting thw code to microcontrollers which have neither an operating system nor float arithmetics.
+by a define USE_STD, also the math functions are optionals by a define NO_LIBM_SUPPORT. That is very useful for porting the code to microcontrollers which have neither an operating system nor float arithmetics.
 
 So currently this project has two branches:
   - the "main" branch allows easy extending, running and testing on a linux system
