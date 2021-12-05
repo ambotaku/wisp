@@ -98,7 +98,7 @@ std::string read_file_contents(std::string filename) {
 
 // Convert an object to a string using a stringstream conveniently
 #define to_string( x ) static_cast<std::ostringstream&>((std::ostringstream() << std::dec << x )).str()
-#define to_hex( x ) static_cast<std::ostringstream&>((std::ostringstream() << std::hex << x )).str()
+#define to_hex( x ) static_cast<std::ostringstream&>((std::ostringstream() << std::hex << "&" << x )).str()
 
 // Replace a substring with a replacement string in a source string
 void replace_substring(std::string &src, std::string substr, std::string replacement) {
