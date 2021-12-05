@@ -726,7 +726,7 @@ public:
         }
     }
 
-    std::string display() const {
+    std::string display(bool hex=false) const {
         std::string result;
         switch (type) {
         case QUOTE:
@@ -734,7 +734,12 @@ public:
         case ATOM:
             return str;
         case INT:
-            return to_string(stack_data.i);
+            if (hex) {
+                result = to_hex(stack_data.i); 
+            } else {
+                result = to_string(stack_data.i);
+            }
+            return result;
         case FLOAT:
             return to_string(stack_data.f);
         case STRING:
@@ -1689,6 +1694,16 @@ namespace builtin {
         return Value::string(args[0].display());
     }
 
+    Value hexnum(std::vector<Value> args, Environment &env) {
+        // Is not a special form, so we can evaluate our args.
+        eval_args(args, env);
+
+        if (args.size() != 1)
+            throw Error(Value("hexnum", display), env, args.size() > 1? TOO_MANY_ARGS : TOO_FEW_ARGS);
+
+        return Value::string(args[0].display(true));
+    }
+
     Value debug(std::vector<Value> args, Environment &env) {
         // Is not a special form, so we can evaluate our args.
         eval_args(args, env);
@@ -1890,6 +1905,7 @@ Value Environment::get(std::string name) const {
     if (name == "debug")   return Value("debug",   builtin::debug);
     if (name == "replace") return Value("replace", builtin::replace);
     if (name == "display") return Value("display", builtin::display);
+    if (name == "hex") return Value("hex", builtin::hexnum);
     
     // Casting operations
     if (name == "int")   return Value("int",   builtin::cast_to_int);
