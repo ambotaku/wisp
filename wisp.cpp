@@ -55,7 +55,6 @@ std::string read_file_contents(std::string filename) {
 #include <map>
 #include <string>
 #include <vector>
-#include <bitset>
 #include <sstream>
 #include <exception>
 
@@ -92,7 +91,6 @@ std::string read_file_contents(std::string filename) {
 #define ATOM_TYPE "atom"
 #define QUOTE_TYPE "quote"
 #define LIST_TYPE "list"
-#define BITSET_TYPE "bitset"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// HELPER FUNCTIONS ///////////////////////////////////////////////////////////
@@ -119,8 +117,6 @@ bool is_symbol(char ch) {
 ////////////////////////////////////////////////////////////////////////////////
 /// LISP CONSTRUCTS ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-#define BITSET_BITS 32
 
 // Forward declaration for Environment class definition
 class Value;
@@ -195,8 +191,6 @@ public:
     Value(double f) : type(FLOAT) { stack_data.f = f; }
     // Constructs a list
     Value(std::vector<Value> list) : type(LIST), list(list) {}
-    // Construct a bitset
-    Value(unsigned long bits) : type(BITSET) { stack_data.i = bits; }
 
     // Construct a quoted value
     static Value quote(Value quoted) {
@@ -228,7 +222,6 @@ public:
         result.str = s;
         return result;
     }
-
 
     // Construct a lambda function
     Value(std::vector<Value> params, Value ret, Environment const &env) : type(LAMBDA) {
@@ -302,11 +295,7 @@ public:
     Value eval(Environment &env);
 
     bool is_number() const {
-        return is_integer() || (type == FLOAT);
-    }
-
-    bool is_integer() const {
-        return type == INT || type == BITSET;
+        return type == INT || type == FLOAT;
     }
 
     // Get the "truthy" boolean value of this value.
@@ -322,10 +311,6 @@ public:
     // Get this item's floating point value
     double as_float() const {
         return cast_to_int().stack_data.f;
-    }
-
-    std::bitset<BITSET_BITS> as_bitset() const {
-        return std::bitset<BITSET_BITS>(stack_data.i);
     }
 
     // Get this item's string value
@@ -384,9 +369,7 @@ public:
     // Cast this to an integer value
     Value cast_to_int() const {
         switch (type) {
-        case INT: 
-        case BITSET:
-            return *this;
+        case INT: return *this;
         case FLOAT: return Value(int(stack_data.f));
         // Only ints and floats can be cast to an int
         default:
@@ -405,8 +388,6 @@ public:
         }
     }
 
-    
-
     ////////////////////////////////////////////////////////////////////////////////
     /// COMPARISON OPERATIONS //////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -423,8 +404,6 @@ public:
         case FLOAT:
             return stack_data.f == other.stack_data.f;
         case INT:
-            return stack_data.i == other.stack_data.i;
-        case BITSET:
             return stack_data.i == other.stack_data.i;
         case BUILTIN:
             return stack_data.b == other.stack_data.b;
@@ -687,37 +666,37 @@ public:
     }
 
     Value operator&(Value other) const {
-        if (!is_integer() || !other.is_integer())
+        if (type != INT || other.type != INT)
             throw Error(other, Environment(), INVALID_BIT_OP);
         return Value(stack_data.i & other.stack_data.i);
     }
 
     Value operator|(Value other) const {
-        if (!is_integer() || !other.is_integer())
+        if (type != INT || other.type != INT)
             throw Error(other, Environment(), INVALID_BIT_OP);
         return Value(stack_data.i | other.stack_data.i);
     }
 
     Value operator^(Value other) const {
-        if (!is_integer() || !other.is_integer())
+        if (type != INT || other.type != INT)
             throw Error(other, Environment(), INVALID_BIT_OP);
         return Value(stack_data.i ^ other.stack_data.i);
     }
 
     Value operator~() const {
-        if (!is_integer())
+        if (type != INT)
             throw Error(*this, Environment(), INVALID_BIT_OP);
         return Value(~stack_data.i);
     }
 
     Value operator<<(Value other) const {
-        if (!is_integer() || !other.is_integer())
+        if (type != INT || other.type != INT)
             throw Error(other, Environment(), INVALID_BIT_OP);
         return Value(stack_data.i << other.stack_data.i);
     }
 
     Value operator>>(Value other) const {
-        if (!is_integer() || !other.is_integer())
+        if (type != INT || other.type != INT)
             throw Error(other, Environment(), INVALID_BIT_OP);
         return Value(stack_data.i >> other.stack_data.i);
     }
@@ -729,7 +708,6 @@ public:
         case ATOM: return ATOM_TYPE;
         case INT: return INT_TYPE;
         case FLOAT: return FLOAT_TYPE;
-        case BITSET: return BITSET_TYPE;
         case LIST: return LIST_TYPE;
         case STRING: return STRING_TYPE;
         case BUILTIN:
@@ -759,14 +737,11 @@ public:
             if (hex) {
                 result = to_hex(stack_data.i); 
             } else {
-                result = to_dec(stack_data.i);
+                result = to_string(stack_data.i);
             }
             return result;
-        case BITSET:
-            return hex ? 
-                to_hex(stack_data.i) : as_bitset().to_string();
         case FLOAT:
-            return to_dec(stack_data.f);
+            return to_string(stack_data.f);
         case STRING:
             return str;
         case LAMBDA:
@@ -782,7 +757,7 @@ public:
             }
             return "(" + result + ")";
         case BUILTIN:
-            return "<" + str + " at " + to_dec(long(stack_data.b)) + ">";
+            return "<" + str + " at " + to_string(long(stack_data.b)) + ">";
         case UNIT:
             return "@";
         default:
@@ -801,9 +776,9 @@ public:
         case ATOM:
             return str;
         case INT:
-            return to_dec(stack_data.i);
+            return to_string(stack_data.i);
         case FLOAT:
-            return to_dec(stack_data.f);
+            return to_string(stack_data.f);
         case STRING:
             for (size_t i=0; i<str.length(); i++) {
                 if (str[i] == '"') result += "\\\"";
@@ -823,7 +798,7 @@ public:
             }
             return "(" + result + ")";
         case BUILTIN:
-            return "<" + str + " at " + to_dec(long(stack_data.b)) + ">";
+            return "<" + str + " at " + to_string(long(stack_data.b)) + ">";
         case UNIT:
             return "@";
         default:
@@ -844,7 +819,6 @@ private:
         ATOM,
         INT,
         FLOAT,
-        BITSET,
         LIST,
         STRING,
         LAMBDA,
@@ -877,7 +851,7 @@ Error::~Error() {
 }
 
 std::string Error::description() {
-    return "error: the expression `" + cause->debug() + "` failed in scope " + to_dec(env) + " with message \"" + msg + "\"";
+    return "error: the expression `" + cause->debug() + "` failed in scope " + to_string(env) + " with message \"" + msg + "\"";
 }
 
 void Environment::combine(Environment const &other) {
@@ -1730,16 +1704,6 @@ namespace builtin {
         return Value::string(args[0].display(true));
     }
 
-    Value binary(std::vector<Value> args, Environment &env) {
-        // Is not a special form, so we can evaluate our args.
-        eval_args(args, env);
-
-        if (args.size() != 1)
-            throw Error(Value("binary", display), env, args.size() > 1? TOO_MANY_ARGS : TOO_FEW_ARGS);
-
-        return Value::string(args[0].as_bitset().to_string());
-    }
-
     Value debug(std::vector<Value> args, Environment &env) {
         // Is not a special form, so we can evaluate our args.
         eval_args(args, env);
@@ -1942,7 +1906,6 @@ Value Environment::get(std::string name) const {
     if (name == "replace") return Value("replace", builtin::replace);
     if (name == "display") return Value("display", builtin::display);
     if (name == "hex") return Value("hex", builtin::hexnum);
-    if (name == "binary")  return Value("binary", builtin::binary);
     
     // Casting operations
     if (name == "int")   return Value("int",   builtin::cast_to_int);
@@ -2040,7 +2003,7 @@ int main(int argc, const char **argv) {
             if (line.empty()) 
                 continue;
             auto result = run(line, env);
-            printf("\r\n%s\r\n", to_dec(result.debug()).c_str());
+            printf("\r\n%s\r\n", to_string(result.debug()).c_str());
         } catch (Error &e) {
             printf("\r\n%s\r\n", e.description().c_str());
         } catch (std::runtime_error &e) {
