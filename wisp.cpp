@@ -73,6 +73,7 @@ std::string read_file_contents(std::string filename) {
 #define UNKNOWN_ERROR "unknown exception"
 #define INVALID_LAMBDA "invalid lambda"
 #define INVALID_BIN_OP "invalid binary operation"
+#define INVALID_BIT_OP "invalid bit operation"
 #define INVALID_ORDER "cannot order expression"
 #define BAD_CAST "cannot cast"
 #define ATOM_NOT_DEFINED "atom not defined"
@@ -100,7 +101,8 @@ std::string read_file_contents(std::string filename) {
 
 // Convert an object to a string using a stringstream conveniently
 #define to_string( x ) static_cast<std::ostringstream&>((std::ostringstream() << std::dec << x )).str()
-
+#define to_hex( x ) static_cast<std::ostringstream&>((std::ostringstream() << std::hex << "&" << x )).str()
+ 
 // Replace a substring with a replacement string in a source string
 void replace_substring(std::string &src, std::string substr, std::string replacement) {
     size_t i=0;
@@ -666,6 +668,42 @@ public:
         }
     }
 
+    Value operator&(Value other) const {
+        if (type != INT || other.type != INT)
+            throw Error(other, Environment(), INVALID_BIT_OP);
+        return Value(stack_data.i & other.stack_data.i);
+    }
+
+    Value operator|(Value other) const {
+        if (type != INT || other.type != INT)
+            throw Error(other, Environment(), INVALID_BIT_OP);
+        return Value(stack_data.i | other.stack_data.i);
+    }
+
+    Value operator^(Value other) const {
+        if (type != INT || other.type != INT)
+            throw Error(other, Environment(), INVALID_BIT_OP);
+        return Value(stack_data.i ^ other.stack_data.i);
+    }
+
+    Value operator~() const {
+        if (type != INT)
+            throw Error(*this, Environment(), INVALID_BIT_OP);
+        return Value(~stack_data.i);
+    }
+
+    Value operator<<(Value other) const {
+        if (type != INT || other.type != INT)
+            throw Error(other, Environment(), INVALID_BIT_OP);
+        return Value(stack_data.i << other.stack_data.i);
+    }
+
+    Value operator>>(Value other) const {
+        if (type != INT || other.type != INT)
+            throw Error(other, Environment(), INVALID_BIT_OP);
+        return Value(stack_data.i >> other.stack_data.i);
+    }
+
     // Get the name of the type of this value
     std::string get_type_name() {
         switch (type) {
@@ -691,7 +729,7 @@ public:
         }
     }
 
-    std::string display() const {
+    std::string display(bool hex=false) const {
         std::string result;
         switch (type) {
         case QUOTE:
@@ -699,7 +737,12 @@ public:
         case ATOM:
             return str;
         case INT:
-            return to_string(stack_data.i);
+            if (hex) {
+                result = to_hex(stack_data.i); 
+            } else {
+                result = to_string(stack_data.i);
+            }
+            return result;
         case FLOAT:
             return to_string(stack_data.f);
         case STRING:
@@ -878,7 +921,6 @@ Value Value::apply(std::vector<Value> args, Environment &env) {
     }
 }
 
-
 Value Value::eval(Environment &env) {
     std::vector<Value> args;
     Value function;
@@ -953,19 +995,32 @@ Value parse(std::string &s, int &ptr) {
         skip_whitespace(s, ++ptr);
         return result;
         
-    } else if (isdigit(s[ptr]) || (s[ptr] == '-' && isdigit(s[ptr + 1]))) {
+    } else if (isdigit(s[ptr]) 
+            || (s[ptr] == '-' && isdigit(s[ptr + 1]))
+            || (s[ptr] == '&' && isxdigit(s[ptr + 1]))) {
         // If this is a number
         bool negate = s[ptr] == '-';
+        bool hex = s[ptr] == '&';
         if (negate) ptr++;
+        if (hex) ptr++;
         
         int save_ptr = ptr;
-        while (isdigit(s[ptr]) || s[ptr] == '.') ptr++;
+        if (hex) {
+            while (isxdigit(s[ptr])) ptr++;
+        } else {
+            while (isdigit(s[ptr]) || s[ptr] == '.') ptr++;
+        }
+
         std::string n = s.substr(save_ptr, ptr);
         skip_whitespace(s, ptr);
         
-        if (n.find('.') != std::string::npos)
+        if (n.find('.') != std::string::npos) {
             return Value((negate? -1 : 1) * atof(n.c_str()));
-        else return Value((negate? -1 : 1) * atoi(n.c_str()));
+        } else if (hex) {
+            char *pEnd;
+            int num = strtol(n.c_str(), &pEnd, 16);
+            return Value(num);
+        } else return Value((negate? -1 : 1) * atoi(n.c_str()));
 
     } else if (s[ptr] == '\"') {
         // If this is a string
@@ -1292,6 +1347,71 @@ namespace builtin {
         return acc;
     }
 
+    Value bitNot(std::vector<Value> args, Environment &env) {
+        eval_args(args, env);
+        if (args.size() > 1)
+            throw Error(Value("+", sum), env, TOO_MANY_ARGS);
+        return ~args[0];
+    }
+
+    // bitset and multiple values
+    Value bitAnd(std::vector<Value> args, Environment &env) {
+        // Is not a special form, so we can evaluate our args.
+        eval_args(args, env);
+        
+        if (args.size() < 2)
+            throw Error(Value("&", bitAnd), env, TOO_FEW_ARGS);
+        
+        Value acc = args[0];
+        for (size_t i=1; i<args.size(); i++)
+            acc = acc & args[i];
+        return acc;
+    }
+
+    // bitset or multiple values
+    Value bitOr(std::vector<Value> args, Environment &env) {
+        // Is not a special form, so we can evaluate our args.
+        eval_args(args, env);
+        
+        if (args.size() < 2)
+            throw Error(Value("|", bitOr), env, TOO_FEW_ARGS);
+        
+        Value acc = args[0];
+        for (size_t i=1; i<args.size(); i++)
+            acc = acc | args[i];
+        return acc;
+    }
+
+    // bitset xor multiple values
+    Value bitXor(std::vector<Value> args, Environment &env) {
+        // Is not a special form, so we can evaluate our args.
+        eval_args(args, env);
+        
+        if (args.size() < 2)
+            throw Error(Value("^", bitXor), env, TOO_FEW_ARGS);
+        
+        Value acc = args[0];
+        for (size_t i=1; i<args.size(); i++)
+            acc = acc ^ args[i];
+        return acc;
+    }
+
+    Value bitShiftLeft(std::vector<Value> args, Environment &env) {
+        // Is not a special form, so we can evaluate our args.
+        eval_args(args, env);
+        if (args.size() != 2)
+            throw Error(Value("-", bitShiftLeft), env, args.size() > 2? TOO_MANY_ARGS : TOO_FEW_ARGS);
+        return args[0] << args[1];
+    }
+
+    Value bitShiftRight(std::vector<Value> args, Environment &env) {
+        // Is not a special form, so we can evaluate our args.
+        eval_args(args, env);
+        if (args.size() != 2)
+            throw Error(Value("-", bitShiftLeft), env, args.size() > 2? TOO_MANY_ARGS : TOO_FEW_ARGS);
+        return args[0] >> args[1];
+    }
+
     // Subtract two values
     Value subtract(std::vector<Value> args, Environment &env) {
         // Is not a special form, so we can evaluate our args.
@@ -1577,6 +1697,16 @@ namespace builtin {
         return Value::string(args[0].display());
     }
 
+    Value hexnum(std::vector<Value> args, Environment &env) {
+        // Is not a special form, so we can evaluate our args.
+        eval_args(args, env);
+
+        if (args.size() != 1)
+            throw Error(Value("hexnum", display), env, args.size() > 1? TOO_MANY_ARGS : TOO_FEW_ARGS);
+
+        return Value::string(args[0].display(true));
+    }
+
     Value debug(std::vector<Value> args, Environment &env) {
         // Is not a special form, so we can evaluate our args.
         eval_args(args, env);
@@ -1733,6 +1863,14 @@ Value Environment::get(std::string name) const {
     if (name == "/") return Value("/", builtin::divide);
     if (name == "%") return Value("%", builtin::remainder);
 
+    // bitwise operations
+    if (name == "&") return Value("&", builtin::bitAnd);
+    if (name == "|") return Value("|", builtin::bitOr);
+    if (name == "^") return Value("^", builtin::bitXor);
+    if (name == "~") return Value("~", builtin::bitNot);
+    if (name == "<<") return Value("<<", builtin::bitShiftLeft);
+    if (name == ">>") return Value(">>", builtin::bitShiftRight);
+
     // List operations
     if (name == "list")   return Value("list",   builtin::list);
     if (name == "insert") return Value("insert", builtin::insert);
@@ -1770,6 +1908,7 @@ Value Environment::get(std::string name) const {
     if (name == "debug")   return Value("debug",   builtin::debug);
     if (name == "replace") return Value("replace", builtin::replace);
     if (name == "display") return Value("display", builtin::display);
+    if (name == "hex") return Value("hex", builtin::hexnum);
     
     // Casting operations
     if (name == "int")   return Value("int",   builtin::cast_to_int);
@@ -1790,6 +1929,7 @@ Value Environment::get(std::string name) const {
 }
 
 #ifdef USE_STD
+
 int main(int argc, const char **argv) {
     Environment env;
     std::vector<Value> args;
@@ -1811,6 +1951,8 @@ int main(int argc, const char **argv) {
     } catch (std::runtime_error &e) {
         std::cerr << e.what() << std::endl;
     }
+
+    return 0;
 }
 #else
 
@@ -1861,7 +2003,10 @@ int main(int argc, const char **argv) {
     for(;;) {
         printf(">>> ");
         try {
-            auto result = run(getLine(), env);
+            std::string line = getLine();
+            if (line.empty()) 
+                continue;
+            auto result = run(line, env);
             printf("\r\n%s\r\n", to_string(result.debug()).c_str());
         } catch (Error &e) {
             printf("\r\n%s\r\n", e.description().c_str());
