@@ -162,3 +162,5 @@ in file **CMakeLists.txt** you can build a *wisp* executable that has nearly all
 
 That line is commented to remove any operating system dependencies (as needed for microcontrollers). 
 Under Linux such a build should behave like being run on a controller and only the REPL mode is available.
+
+TEST
